@@ -1,0 +1,24 @@
+<!-- front-end testing example -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="node_modules/mocha/mocha.js"></script>
+  <script src="node_modules/chai/chai.js"></script>
+  <link rel="stylesheet" href="node_modules/mocha/mocha.css">
+</head>
+<body>
+  <div id="mocha"></div>
+  <script>
+    mocha.setup('bdd');
+    var expect=chai.expect;
+    describe('some test', function() {
+      it('should run a test in the browser', function() {
+        expect(true).to.eql(true);
+      });
+    });
+
+    mocha.run(); //actually run mocha
+</body>
+</html>

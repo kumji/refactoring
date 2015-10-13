@@ -1,0 +1,1 @@
+require(__dirname + '/stocks_http_test.js');
