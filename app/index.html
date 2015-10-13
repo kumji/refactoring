@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+<body data-ng-app="stocksApp">
+  <main data-ng-controller="StocksController" data-ng-init="getAll()">
+    <div data-stock-directive data-stockList></div>
+    <form name ="newStock" data-ng-submit="createStock(newStock)">
+      <label for ="newItem">
+        Item: <input type="text" data-ng-model="newStock.item">
+        Qty: <input type="text" data-ng-model="newStock.qty">
+      </label>
+      <button type="add" data-ng-disabled="newStockForm.$invalid">Add</button>
+    </form>
+
+    <table id="stocklist" border="1" stype="width:100px">
+      <thead>
+        <tr>
+          <th>ITEM<th>QTY<th>ID<th>EDIT<th>DELETE
+      <tbody>
+        <tr class="{{stock.status}}" data-ng-repeat="stock in stocks">
+          <td>
+          <div data-ng-hide="stock.editing">{{stock.item}}</div>
+          <div data-ng-show="stock.editing"><input type="text" ng-model="stock.item"></div>
+          </td>
+          <td>
+          <div data-ng-hide="stock.editing">{{stock.qty}}</div>
+          <div data-ng-show="stock.editing"><input type="text" ng-model="stock.qty"></div>
+          </td>
+          <td>{{stock._id}}</td>
+
+          <td>
+            <button ng-hide="stock.editing" data-ng-click="stock.editing=true">edit</button>
+            <button ng-show="stock.editing" data-ng-click="updateStock(stock)">save</button>
+            <button ng-show="stock.editing" data-ng-click="cancel(stock)">cancel</button>
+          </td>
+          <td><button data-ng-click="deleteStock(stock)">delete</button>
+        </tr>
+      </tbody>
+      </thead>
+    </table>
+  </main>
+  <script src="bundle.js"></script>
+</body>
+</html>
+                      
