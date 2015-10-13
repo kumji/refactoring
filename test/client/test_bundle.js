@@ -51,7 +51,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	__webpack_require__(2);
-	__webpack_require__(6);
+	__webpack_require__(10);
 
 	describe('stocks controller', function() {
 	  var $httpBackend;
@@ -77,7 +77,6 @@
 	      $httpBackend = _$httpBackend_;
 	      $scope = $rootScope.$new();
 	      $ControllerConstructor('StocksController', {$scope: $scope});
-	      $scope.newStock = {item:'beforetest'};
 	    }));
 
 	    afterEach(function() {
@@ -105,19 +104,23 @@
 	      expect($scope.newStock).toBe(null);
 	    });
 
-	    it('should be able to delete a stock', function(){
-	      $httpBackend.expectDELETE('api/stocks/delete', {item: 'beforetest'}).respond(200, {item:'beforetest'});
-	      $scope.deleteStock({item:'beforetest'});
+	    it('should be able to update a stock', function() {
+	      var stock = {item: 'test', qty:1, editing: true};
+	      $httpBackend.expectPUT('/api/stocks/update/test', stock).respond(200);
+	      $scope.updateStock(stock);
 	      $httpBackend.flush();
-	      expect($scope.stocks[0]).toBe(null);
+	      expect(stock.editing).toBe(false);
 	    });
-	    // it('should be able to update a stock', function(){
-	    //   $httpBackend.expect(PUT, '/api/stocks/update', {item: 'testest'}).respond(200, {item:'testest'});
-	    //   $scope.newStock = {item: 'testest'};
-	    //   $scope.updateStock(stock);
-	    //   $httpBackend.flush();
-	    //   expect($scope.stocks[0].item).toBe('testest');
-	    // })
+
+	    it('should be able to delete a stock', function() {
+	      var stock = {item: 'test'};
+	      $scope.stocks = [stock];
+	      $httpBackend.expectDELETE('/api/stocks/delete/test').respond(200);
+	      $scope.deleteStock(stock);
+	      $httpBackend.flush();
+	      expect($scope.stocks.length).toBe(0);
+	      expect($scope.stocks.indexOf(stock)).toBe(-1);
+	    });
 	  });
 	});
 
@@ -129,7 +132,10 @@
 
 	var stocksApp = angular.module('stocksApp', []); //[] global level app dependencies [] creating a new module called checkoutApp
 	__webpack_require__(4)(stocksApp);
-	//require('./directives/directives')(stocksApp);
+	__webpack_require__(6)(stocksApp);
+	__webpack_require__(8)(stocksApp);
+
+
 
 /***/ },
 /* 3 */
@@ -29053,48 +29059,126 @@
 /* 5 */
 /***/ function(module, exports) {
 
+	var handleSuccess = function(callback) {
+	  return function(res) {
+	    callback(null, res.data);
+	  }
+	};
+
+	var handlFailure = function(callback) {
+	  return function(data) {
+	    callback(data);
+	  };
+	};
+
 	module.exports = function(app) {
-	  app.controller('StocksController', ['$scope', '$http', function($scope, $http) {
-	    $scope.stocks = []; //Conroller first load into the DOM, call ng-repeat this object
-	    $scope.getAll = function() {
-	      $http.get('/api/stocks/list')
-	        .then(function(res) {
-	          $scope.stocks = res.data;
-	        }, function(res) {
-	          console.log(res);
-	        });
-	    };
-	    $scope.createStock = function(stock) {
-	      $http.post('/api/stocks/add', stock) 
-	        .then(function(res) {
-	          console.log(res.data);
-	          $scope.stocks.push(res.data);
-	          $scope.newStock = null; //to reset 
-	        }, function(res) {
-	          console.log(res);
-	        });
+	  app.factory('Resource', ['$http', function($http) {
+	    var Resource = function(resourceName) {
+	      this.resourceName = resourceName;
 	    };
 
+	    Resource.prototype.create = function(resource, callback) {
+	      $http.post('/api/' + this.resourceName + '/add', resource)
+	        .then(handleSuccess(callback), handlFailure(callback));
+	    };
+
+	    Resource.prototype.getAll = function(callback) {
+	      $http.get('/api/' + this.resourceName + '/list')
+	        .then(handleSuccess(callback), handlFailure(callback));
+	    };
+
+	    Resource.prototype.update = function(resource, callback) {
+	      $http.put('/api/' + this.resourceName + '/update/' + resource.item, resource)
+	        .then(handleSuccess(callback), handlFailure(callback));
+	    };
+
+	    Resource.prototype.remove = function(resource, callback) {
+	      $http.delete('/api/' + this.resourceName +'/delete/' + resource.item)
+	        .then(handleSuccess(callback), handlFailure(callback));
+	    };
+
+	    return function(resourceName) {
+	      return new Resource(resourceName);
+	    };
+	  }]);
+	};
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = function(app) {
+	  __webpack_require__(7)(app);
+	}
+
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	module.exports = function(app) {
+	  app.directive('stockDirective', function() {
+	    return {
+	      restrict: 'A',
+	      replace: true,
+	      template: '<h1>{{stockList}}</h1>',
+	      scope: {
+	        stockList: '@'
+	      },
+	      controller: function($scope) {
+	        $scope.stockList = 'Stock List'
+	      }
+	    };
+	  });
+	};
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = function(app) {
+	  __webpack_require__(9)(app);
+	};
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	module.exports = function(app) {
+	  app.controller('StocksController', ['$scope', 'Resource', function($scope, Resource) {
+	    $scope.stocks = []; //Conroller first load into the DOM, call ng-repeat this object
+	    var stockResource = Resource('stocks');
+
+	    $scope.getAll = function() {
+	      stockResource.getAll(function(err, data){
+	        if (err) return console.log(err);
+	        $scope.stocks = data;
+	      });
+	    };;
+
+
+	    $scope.createStock = function(stock) {
+	      stockResource.create(stock, function(err, data) {
+	        if (err) return console.log(err);
+	        $scope.stocks.push(data);
+	        $scope.newStock = null;
+	      });
+	    };
 
 	    $scope.updateStock = function(stock) {
-	      $http.put('/api/stocks/update/' + stock.item, stock)
-	        .then(function(res){
-	          delete stock.status;
-	          stock.editing = false; 
-	        }, function(res) {
-	          console.log(res);
-	          stock.status = 'failed';
-	        stock.editing = false; //default view
-	        })
+	      stockResource.update(stock, function(err){
+	        stock.editing = false;
+	        if (err) return console.log(err);
+	      });
 	    };
 
 	    $scope.deleteStock = function(stock) {
-	      $scope.stocks.splice($scope.stocks.indexOf(stock), 1);
-	      $http.delete('/api/stocks/delete/' + stock.item)
-	        .then(function() {}, function(res){
-	          $scope.getAll();
-	          console.log(res);
-	        });
+	      stockResource.remove(stock, function(err){
+	        if (err) return console.log(err);
+	        $scope.stocks.splice($scope.stocks.indexOf(stock), 1);
+	      //  $scope.getAll();
+	      });
 	    };
 
 	    $scope.cancel = function(stock) {
@@ -29105,9 +29189,55 @@
 	};
 
 
+	 // $scope.getAll = function() {
+	 //      $http.get('/api/stocks/list')
+	 //        .then(function(res) {
+	 //          $scope.stocks = res.data;
+	 //        }, function(res) {
+	 //          console.log(res);
+	 //        });
+	 //    };
+	 //    $scope.createStock = function(stock) {
+	 //      $http.post('/api/stocks/add', stock) 
+	 //        .then(function(res) {
+	 //          console.log(res.data);
+	 //          $scope.stocks.push(res.data);
+	 //          $scope.newStock = null; //to reset 
+	 //        }, function(res) {
+	 //          console.log(res);
+	 //        });
+	 //    };
+
+
+	 //    $scope.updateStock = function(stock) {
+	 //      $http.put('/api/stocks/update/' + stock.item, stock)
+	 //        .then(function(res){
+	 //          delete stock.status;
+	 //          stock.editing = false; 
+	 //        }, function(res) {
+	 //          console.log(res);
+	 //          stock.editing = false; //default view
+	 //        })
+	 //    };
+
+	 //    $scope.deleteStock = function(stock) {
+	 //      $scope.stocks.splice($scope.stocks.indexOf(stock), 1);
+	 //      $http.delete('/subliapi/stocks/delete/' + stock.item)
+	 //        .then(function() {}, function(res){
+	 //          $scope.getAll();
+	 //          console.log(res);
+	 //        });
+	 //    };
+
+	 //    $scope.cancel = function(stock) {
+	 //      $scope.getAll();
+	 //      stock.editing = false;
+	 //    };
+
+
 
 /***/ },
-/* 6 */
+/* 10 */
 /***/ function(module, exports) {
 
 	/**

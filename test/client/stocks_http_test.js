@@ -25,7 +25,6 @@ describe('stocks controller', function() {
       $httpBackend = _$httpBackend_;
       $scope = $rootScope.$new();
       $ControllerConstructor('StocksController', {$scope: $scope});
-      $scope.newStock = {item:'beforetest'};
     }));
 
     afterEach(function() {
@@ -53,18 +52,22 @@ describe('stocks controller', function() {
       expect($scope.newStock).toBe(null);
     });
 
-    // it('should be able to delete a stock', function(){
-    //   $httpBackend.expectDELETE('api/stocks/delete', {item: 'beforetest'}).respond(200, {item:'beforetest'});
-    //   $scope.deleteStock({item:'beforetest'});
-    //   $httpBackend.flush();
-    //   expect($scope.stocks[0]).toBe(null);
-    // });
-    // it('should be able to update a stock', function(){
-    //   $httpBackend.expect(PUT, '/api/stocks/update', {item: 'testest'}).respond(200, {item:'testest'});
-    //   $scope.newStock = {item: 'testest'};
-    //   $scope.updateStock(stock);
-    //   $httpBackend.flush();
-    //   expect($scope.stocks[0].item).toBe('testest');
-    // })
+    it('should be able to update a stock', function() {
+      var stock = {item: 'test', qty:1, editing: true};
+      $httpBackend.expectPUT('/api/stocks/update/test', stock).respond(200);
+      $scope.updateStock(stock);
+      $httpBackend.flush();
+      expect(stock.editing).toBe(false);
+    });
+
+    it('should be able to delete a stock', function() {
+      var stock = {item: 'test'};
+      $scope.stocks = [stock];
+      $httpBackend.expectDELETE('/api/stocks/delete/test').respond(200);
+      $scope.deleteStock(stock);
+      $httpBackend.flush();
+      expect($scope.stocks.length).toBe(0);
+      expect($scope.stocks.indexOf(stock)).toBe(-1);
+    });
   });
 });

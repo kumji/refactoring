@@ -34,7 +34,7 @@ stockRouter.put('/update/:item', jsonParser, function(req, res){
   });
 });
 
-stockRouter.delete('/delete/:_id', jsonParser, function(req, res){
+stockRouter.delete('/delete/:item', jsonParser, function(req, res){
   Stock.remove({'': req.params._id}, function(err){
     if (err) return handleError(err, res); 
     console.log('removed' + req.params.item + 'stock');

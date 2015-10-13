@@ -30,7 +30,7 @@ module.exports = function(app) {
       stockResource.remove(stock, function(err){
         if (err) return console.log(err);
         $scope.stocks.splice($scope.stocks.indexOf(stock), 1);
-        $scope.getAll();
+      //  $scope.getAll();
       });
     };
 
